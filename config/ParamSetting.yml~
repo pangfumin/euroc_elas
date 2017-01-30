@@ -1,0 +1,5 @@
+%YAML:1.0
+
+datasetBase:"/home/pang/dataset/mav_cam_imu/cam_checkerboard/mav0/"
+imageStart: 750
+imageEnd: 810           
