@@ -5,18 +5,6 @@ CMAKE_MINIMUM_REQUIRED (VERSION 2.8.3)
 SET(CMAKE_VERBOSE_MAKEFILE OFF)
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/CMakeModules/")
 
-# Set definitions
-IF(TRACE)
-  ADD_DEFINITIONS(-DSVO_TRACE)
-ENDIF()
-IF(HAVE_G2O)
-  ADD_DEFINITIONS(-DUSE_BUNDLE_ADJUSTMENT)
-ENDIF()
-
-IF(DEBUG_OUTPUT)
-  ADD_DEFINITIONS(-DSVO_DEBUG_OUTPUT)
-ENDIF()
-
 
 
 SET(CMAKE_BUILD_TYPE Debug)  
@@ -43,6 +31,7 @@ FIND_PACKAGE(Boost COMPONENTS filesystem system thread REQUIRED)
 find_package( brisk 2 REQUIRED )
 
 
+
 # glog
 find_package(Glog REQUIRED)
 include_directories(BEFORE ${GLOG_INCLUDE_DIRS}) 
@@ -55,6 +44,12 @@ include_directories(${Pangolin_INCLUDE_DIRS})
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+
+
+# pcl 
+find_package( PCL REQUIRED COMPONENT common io )
+include_directories( ${PCL_INCLUDE_DIRS} )
+add_definitions( ${PCL_DEFINITIONS} )
 
 
 
@@ -88,7 +83,7 @@ TARGET_LINK_LIBRARIES(euroc_elas
   ${OpenCV_LIBS}
   ${GLOG_LIBRARY}
   ${Boost_LIBRARIES}
- 
+  ${PCL_LIBRARIES}
   ${Pangolin_LIBRARIES}
   ${BRISK_LIBRARIES}
   
@@ -100,8 +95,8 @@ TARGET_LINK_LIBRARIES(main euroc_elas)
 
 
 
-ADD_EXECUTABLE(test test/test.cpp)
-TARGET_LINK_LIBRARIES(test euroc_elas)
+ADD_EXECUTABLE(disparity2pointcloud test/disparity2pointcloud.cpp)
+TARGET_LINK_LIBRARIES(disparity2pointcloud euroc_elas)
 
 
 ADD_EXECUTABLE(saveRectifyPGM tools/saveRectifyPGM.cpp)
