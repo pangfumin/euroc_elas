@@ -57,10 +57,11 @@ SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 
+
 # Include dirs
 INCLUDE_DIRECTORIES(
   include
-  EfficientLargeScaleStereo
+  elas
   ${Eigen_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
@@ -72,11 +73,11 @@ INCLUDE_DIRECTORIES(
 # Set sourcefiles
 LIST(APPEND SOURCEFILES
 src/Struct_definition.cpp
-EfficientLargeScaleStereo/descriptor.cpp
-EfficientLargeScaleStereo/elas.cpp
-EfficientLargeScaleStereo/filter.cpp
-EfficientLargeScaleStereo/matrix.cpp
-EfficientLargeScaleStereo/triangle.cpp
+elas/descriptor.cpp
+elas/elas.cpp
+elas/filter.cpp
+elas/matrix.cpp
+elas/triangle.cpp
   
 )
 
@@ -101,6 +102,17 @@ TARGET_LINK_LIBRARIES(main euroc_elas)
 
 ADD_EXECUTABLE(test test/test.cpp)
 TARGET_LINK_LIBRARIES(test euroc_elas)
+
+
+ADD_EXECUTABLE(saveRectifyPGM tools/saveRectifyPGM.cpp)
+TARGET_LINK_LIBRARIES(saveRectifyPGM euroc_elas)
+
+
+ADD_EXECUTABLE(createDPF tools/createDPF.cpp)
+TARGET_LINK_LIBRARIES(createDPF euroc_elas)
+
+ADD_EXECUTABLE(playDPF tools/playDPF.cpp)
+TARGET_LINK_LIBRARIES(playDPF euroc_elas)
 
 
 # TESTS

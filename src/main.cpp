@@ -8,7 +8,7 @@
 #include "opencv2/calib3d/calib3d.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
-#include "StereoEfficientLargeScale.h"
+#include "elas.h"
 #include "image.h"
 #include<string.h>
 
@@ -98,15 +98,7 @@ int  main()
     cv::namedWindow("leftRectify");
     cv::namedWindow("rightRectify");
     
-    Mat dest;
-    StereoEfficientLargeScale elas(0,128);
-
-    // we can set various parameter
-	    //elas.elas.param.ipol_gap_width=;
-	    //elas.elas.param.speckle_size=getParameter("speckle_size");
-	    //elas.elas.param.speckle_sim_threshold=getParameter("speckle_sim");
-
-	
+  
 	
 
     // Main loop
@@ -135,14 +127,7 @@ int  main()
         cv::remap(imRight,imRightRect,M1r,M2r,cv::INTER_LINEAR);
 	
 	//process (imLeftRect,imRightRect);
-	elas(imLeftRect,imRightRect,dest,100);
-
 	
-	
-
-	Mat show;
-	dest.convertTo(show,CV_8U,1.0/8);
-	imshow("disp",show);
      
 	cv::imshow("leftRectify",imLeftRect);
 	cv::imshow("rightRectify",imRightRect);

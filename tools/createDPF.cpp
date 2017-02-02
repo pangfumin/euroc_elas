@@ -1,0 +1,206 @@
+#include <iostream>
+#include <fstream>
+#include <boost/iterator/iterator_concepts.hpp>
+#include "Struct_definition.h"
+#include <opencv2/highgui/highgui.hpp>
+#include <assert.h>
+
+#include "opencv2/calib3d/calib3d.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "elas.h"
+#include "image.h"
+#include<string.h>
+
+
+using namespace cv;
+using namespace std;
+
+void LoadImagesPGM(const string &strPathLeft, const string &strPathRight, const string &strPathTimes,
+                vector<string> &vstrImageLeft, vector<string> &vstrImageRight, vector<string> &vStrTimeStamp,vector<double> &vTimeStamps);
+
+void process (const char* file_1,const char* file_2) ;
+
+int  main()
+{
+  std::string configFile = "../config/ParamSetting.yml";
+  std::string EurocCfg = "../config/EuRoC.yaml";
+  std::string pathTime = "../config/MH01.txt";
+  
+  
+  cv::FileStorage fs(configFile,cv::FileStorage::READ);
+  std::string datasetBase;
+  fs["datasetBase"]>>datasetBase;
+  
+  
+  std::string LeftRectifyPath = datasetBase + "cam0_rectify/data";
+  std::string RightRectifyPath = datasetBase + "cam1_rectify/data";
+
+
+    // Retrieve paths to images
+    vector<string> vstrImageLeft;
+    vector<string> vstrImageRight;
+    vector<double> vTimeStamp;
+    vector<string> vStrTimeStamp;
+    LoadImagesPGM(LeftRectifyPath,RightRectifyPath, pathTime, vstrImageLeft, vstrImageRight,vStrTimeStamp, vTimeStamp);
+
+    if(vstrImageLeft.empty() || vstrImageRight.empty())
+    {
+        cerr << "ERROR: No images in provided path." << endl;
+        return 1;
+    }
+
+    if(vstrImageLeft.size()!=vstrImageRight.size())
+    {
+        cerr << "ERROR: Different number of left and right images." << endl;
+        return 1;
+    }
+
+    
+
+    const int nImages = vstrImageLeft.size();
+
+   
+    cv::namedWindow("leftRectify");
+    cv::namedWindow("rightRectify");
+    
+   
+    // Main loop
+    cv::Mat imLeft, imRight, imLeftRect, imRightRect;
+    for(int ni=0; ni<nImages; ni++)
+    {
+        // Read left and right images from file
+        imLeft = cv::imread(vstrImageLeft[ni],CV_LOAD_IMAGE_GRAYSCALE);
+        imRight = cv::imread(vstrImageRight[ni],CV_LOAD_IMAGE_GRAYSCALE);
+
+        if(imLeft.empty())
+        {
+            cerr << endl << "Failed to load image at: "
+                 << string(vstrImageLeft[ni]) << endl;
+            return 1;
+        }
+
+        if(imRight.empty())
+        {
+            cerr << endl << "Failed to load image at: "
+                 << string(vstrImageRight[ni]) << endl;
+            return 1;
+        }
+        
+        const char *left = vstrImageLeft[ni].c_str();
+	const char *right = vstrImageRight[ni].c_str();
+        process (left,right) ;
+     
+     
+	cv::imshow("leftRectify",imLeft);
+	cv::imshow("rightRectify",imRight);
+	cv::waitKey(3);
+
+    }
+
+    
+  
+    return 0;
+}
+
+void LoadImagesPGM(const string &strPathLeft, const string &strPathRight, const string &strPathTimes,
+                vector<string> &vstrImageLeft, vector<string> &vstrImageRight, vector<string> & vStrTimeStamp ,vector<double> &vTimeStamps)
+{
+    ifstream fTimes;
+    fTimes.open(strPathTimes.c_str());
+    vTimeStamps.reserve(5000);
+    vstrImageLeft.reserve(5000);
+    vstrImageRight.reserve(5000);
+    while(!fTimes.eof())
+    {
+        string s;
+        getline(fTimes,s);
+        if(!s.empty())
+        {
+            stringstream ss;
+            ss << s;
+	    vStrTimeStamp.push_back(ss.str());
+            vstrImageLeft.push_back(strPathLeft + "/" + ss.str() + ".pgm");
+            vstrImageRight.push_back(strPathRight + "/" + ss.str() + ".pgm");
+            double t;
+            ss >> t;
+            vTimeStamps.push_back(t/1e9);
+
+        }
+    }
+}
+
+
+// compute disparities of pgm image input pair file_1, file_2
+void process (const char* file_1,const char* file_2) {
+
+  cout << "Processing: " << file_1 << ", " << file_2 << endl;
+
+  // load images
+  image<uchar> *I1,*I2;
+  I1 = loadPGM(file_1);
+  I2 = loadPGM(file_2);
+
+  // check for correct size
+  if (I1->width()<=0 || I1->height() <=0 || I2->width()<=0 || I2->height() <=0 ||
+      I1->width()!=I2->width() || I1->height()!=I2->height()) {
+    cout << "ERROR: Images must be of same size, but" << endl;
+    cout << "       I1: " << I1->width() <<  " x " << I1->height() << 
+                 ", I2: " << I2->width() <<  " x " << I2->height() << endl;
+    delete I1;
+    delete I2;
+    return;    
+  }
+
+  // get image width and height
+  int32_t width  = I1->width();
+  int32_t height = I1->height();
+
+  // allocate memory for disparity images
+  const int32_t dims[3] = {width,height,width}; // bytes per line = width
+  float* D1_data = (float*)malloc(width*height*sizeof(float));
+  float* D2_data = (float*)malloc(width*height*sizeof(float));
+
+  // process
+  Elas::parameters param;
+  param.postprocess_only_left = false;
+  Elas elas(param);
+  elas.process(I1->data,I2->data,D1_data,D2_data,dims);
+
+  // find maximum disparity for scaling output disparity images to [0..255]
+  float disp_max = 0;
+  for (int32_t i=0; i<width*height; i++) {
+    if (D1_data[i]>disp_max) disp_max = D1_data[i];
+    if (D2_data[i]>disp_max) disp_max = D2_data[i];
+  }
+
+  // copy float to uchar
+  image<uchar> *D1 = new image<uchar>(width,height);
+  image<uchar> *D2 = new image<uchar>(width,height);
+  for (int32_t i=0; i<width*height; i++) {
+    D1->data[i] = (uint8_t)max(255.0*D1_data[i]/disp_max,0.0);
+    D2->data[i] = (uint8_t)max(255.0*D2_data[i]/disp_max,0.0);
+  }
+
+  // save disparity images
+  char output_1[1024];
+  char output_2[1024];
+  strncpy(output_1,file_1,strlen(file_1)-4);
+  strncpy(output_2,file_2,strlen(file_2)-4);
+  output_1[strlen(file_1)-4] = '\0';
+  output_2[strlen(file_2)-4] = '\0';
+  strcat(output_1,"_disp.pgm");
+  strcat(output_2,"_disp.pgm");
+  savePGM(D1,output_1);
+  savePGM(D2,output_2);
+
+  // free memory
+  delete I1;
+  delete I2;
+  delete D1;
+  delete D2;
+  free(D1_data);
+  free(D2_data);
+}
+
+

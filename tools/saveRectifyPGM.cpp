@@ -8,7 +8,7 @@
 #include "opencv2/calib3d/calib3d.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
-#include "elas.h"
+
 #include "image.h"
 #include<string.h>
 
@@ -17,7 +17,7 @@ using namespace cv;
 using namespace std;
 
 void LoadImages(const string &strPathLeft, const string &strPathRight, const string &strPathTimes,
-                vector<string> &vstrImageLeft, vector<string> &vstrImageRight, vector<double> &vTimeStamps);
+                vector<string> &vstrImageLeft, vector<string> &vstrImageRight, vector<string> &vStrTimeStamp,vector<double> &vTimeStamps);
 
 
 
@@ -34,13 +34,16 @@ int  main()
   
   std::string pathLeftImages = datasetBase + "cam0/data";
   std::string pathRightImages = datasetBase + "cam1/data";
+  std::string saveLeftRectifyPath = datasetBase + "cam0_rectify/data";
+  std::string saveRightRectifyPath = datasetBase + "cam1_rectify/data";
 
 
     // Retrieve paths to images
     vector<string> vstrImageLeft;
     vector<string> vstrImageRight;
     vector<double> vTimeStamp;
-    LoadImages(pathLeftImages,pathRightImages, pathTime, vstrImageLeft, vstrImageRight, vTimeStamp);
+    vector<string> vStrTimeStamp;
+    LoadImages(pathLeftImages,pathRightImages, pathTime, vstrImageLeft, vstrImageRight,vStrTimeStamp, vTimeStamp);
 
     if(vstrImageLeft.empty() || vstrImageRight.empty())
     {
@@ -98,8 +101,7 @@ int  main()
     cv::namedWindow("leftRectify");
     cv::namedWindow("rightRectify");
     
- 
-
+   
     // Main loop
     cv::Mat imLeft, imRight, imLeftRect, imRightRect;
     for(int ni=0; ni<nImages; ni++)
@@ -125,7 +127,12 @@ int  main()
         cv::remap(imLeft,imLeftRect,M1l,M2l,cv::INTER_LINEAR);
         cv::remap(imRight,imRightRect,M1r,M2r,cv::INTER_LINEAR);
 	
+
 	
+	cv::imwrite(saveLeftRectifyPath + "/" + vStrTimeStamp[ni] + ".pgm",imLeftRect);
+	cv::imwrite(saveRightRectifyPath + "/" + vStrTimeStamp[ni] + ".pgm",imRightRect);
+	//std::cout<<saveRightRectifyPath + "/" + vStrTimeStamp[ni] + ".pgm"<<std::endl;
+     
 	cv::imshow("leftRectify",imLeftRect);
 	cv::imshow("rightRectify",imRightRect);
 	cv::waitKey(3);
@@ -138,7 +145,7 @@ int  main()
 }
 
 void LoadImages(const string &strPathLeft, const string &strPathRight, const string &strPathTimes,
-                vector<string> &vstrImageLeft, vector<string> &vstrImageRight, vector<double> &vTimeStamps)
+                vector<string> &vstrImageLeft, vector<string> &vstrImageRight, vector<string> & vStrTimeStamp ,vector<double> &vTimeStamps)
 {
     ifstream fTimes;
     fTimes.open(strPathTimes.c_str());
@@ -153,6 +160,7 @@ void LoadImages(const string &strPathLeft, const string &strPathRight, const str
         {
             stringstream ss;
             ss << s;
+	    vStrTimeStamp.push_back(ss.str());
             vstrImageLeft.push_back(strPathLeft + "/" + ss.str() + ".png");
             vstrImageRight.push_back(strPathRight + "/" + ss.str() + ".png");
             double t;
