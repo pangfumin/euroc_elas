@@ -51,6 +51,9 @@ find_package( PCL REQUIRED COMPONENT common io )
 include_directories( ${PCL_INCLUDE_DIRS} )
 add_definitions( ${PCL_DEFINITIONS} )
 
+# octomap
+find_package(octomap REQUIRED)
+include_directories(${OCTOMAP_INCLUDE_DIRS})
 
 
 # Include dirs
@@ -90,13 +93,33 @@ TARGET_LINK_LIBRARIES(euroc_elas
 
 )
 
+include_directories(occmapping/inc)
+# Set sourcefiles
+LIST(APPEND Occmapping_SOURCEFILES
+occmapping/src/probabilitylookup.cpp
+occmapping/src/robustoctree.cpp
+occmapping/src/robustoctreenode.cpp
+)
+
+
+# Create occmapping library
+ADD_LIBRARY(occmapping  ${Occmapping_SOURCEFILES})
+
+TARGET_LINK_LIBRARIES(occmapping
+${OCTOMAP_LIBRARIES}
+)
+
+
+
+
 ADD_EXECUTABLE(main src/main.cpp)
 TARGET_LINK_LIBRARIES(main euroc_elas)
 
 
 
-ADD_EXECUTABLE(disparity2pointcloud test/disparity2pointcloud.cpp)
+ADD_EXECUTABLE(disparity2pointcloud tools/disparity2pointcloud.cpp)
 TARGET_LINK_LIBRARIES(disparity2pointcloud euroc_elas)
+
 
 
 ADD_EXECUTABLE(saveRectifyPGM tools/saveRectifyPGM.cpp)
@@ -108,6 +131,16 @@ TARGET_LINK_LIBRARIES(createDPF euroc_elas)
 
 ADD_EXECUTABLE(playDPF tools/playDPF.cpp)
 TARGET_LINK_LIBRARIES(playDPF euroc_elas)
+
+
+
+ADD_EXECUTABLE(disparity2Octree tools/disparity2Octree.cpp)
+TARGET_LINK_LIBRARIES(disparity2Octree euroc_elas ${OCTOMAP_LIBRARIES})
+
+
+ADD_EXECUTABLE(disparity2Occmapping tools/disparity2Occmapping.cpp)
+TARGET_LINK_LIBRARIES(disparity2Occmapping euroc_elas occmapping ${OCTOMAP_LIBRARIES})
+
 
 
 # TESTS

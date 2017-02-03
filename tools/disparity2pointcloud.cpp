@@ -13,42 +13,30 @@ using namespace std;
 using namespace cv;
 using namespace std;
 
-int  main()
+int  main(int argc, char** argv)
 {
-  std::string configFile = "../config/ParamSetting.yml";
-  std::string EurocCfg = "../config/EuRoC.yaml";
-  std::string pathTime = "../config/MH01.txt";
   
- 
-
-    // Read rectification parameters
-    cv::FileStorage fsSettings(EurocCfg, cv::FileStorage::READ);
-    if(!fsSettings.isOpened())
-    {
-        cerr << "ERROR: Wrong path to settings" << endl;
-        return -1;
-    }
 
    
     double fx,fy,cx,cy;
     double bf;
-    fsSettings["Camera.fx"] >> fx;
-    fsSettings["Camera.fy"] >> fy;
-    fsSettings["Camera.cx"] >> cx;
-    fsSettings["Camera.cy"] >> cy;
+    fx = 435.2046959714599;
+    fy = 435.2046959714599;
+    cx = 367.4517211914062;
+    cy = 252.2008514404297;
     
-    fsSettings["Camera.bf"] >> bf;
+    bf = 47.90639384423901;
     
-    cv::Mat dispImage = cv::imread("../data/1403636750813555456_disp.pgm",CV_LOAD_IMAGE_GRAYSCALE);
+    cv::Mat dispImage = cv::imread(argv[1],CV_LOAD_IMAGE_GRAYSCALE);
     std::cout<< dispImage.type()<<std::endl;
     cv::namedWindow("disparity");
     
     
-    // 定义点云使用的格式：这里用的是XYZRGB
+    
     typedef pcl::PointXYZ PointT; 
     typedef pcl::PointCloud<PointT> PointCloud;
     
-    // 新建一个点云
+    
     PointCloud::Ptr pointCloud( new PointCloud ); 
     
     int rows = dispImage.rows;
@@ -57,7 +45,7 @@ int  main()
 	for ( int u=0; u<cols; u++ )
 	{
 	    unsigned char disp = dispImage.ptr<unsigned char> ( v )[u]; // 深度值
-	    std::cout<< (int)disp<<std::endl;
+	    
 	    if ( disp == 0 ) continue; 
 	    
 	    Eigen::Vector3d point; 
